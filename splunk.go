@@ -27,7 +27,7 @@ type HTTPCollector struct {
 	Index		string		`json:"index" binding:"required"`
 }
 
-func (sl *SplunkLogger) Log(event map[string]string) (err error){
+func (sl *HTTPCollector) Log(event map[string]string) (err error){
 	hostname, _ := os.Hostname()
 	// create Splunk log
 	splunklog := event{
