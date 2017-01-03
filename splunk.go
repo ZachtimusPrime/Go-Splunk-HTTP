@@ -10,7 +10,7 @@ import (
 	"errors"
 )
 
-type logevent struct {
+type event struct {
 	Time 		int64		`json:"time" binding:"required"`	// epoch time in seconds
 	Host		string  	`json:"host" binding:"required"`	// hostname
 	Source		string  	`json:"source" binding:"required"`	// app name
@@ -19,7 +19,7 @@ type logevent struct {
 	Event		map[string]string `json:"event" binding:"required"`	// throw any useful key/val pairs here
 }
 
-type SplunkLogger struct {
+type HTTPCollector struct {
 	Url		string		`json:"url" binding:"required"`
 	Token		string		`json:"token" binding:"required"`
 	Source 		string		`json:"source" binding:"required"`
@@ -30,7 +30,7 @@ type SplunkLogger struct {
 func (sl *SplunkLogger) Log(event map[string]string) (err error){
 	hostname, _ := os.Hostname()
 	// create Splunk log
-	splunklog := logevent{
+	splunklog := event{
 		Time: time.Now().Unix(),
 		Host: hostname,
 		Source: sl.Source,
