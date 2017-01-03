@@ -7,6 +7,7 @@ import (
 	"os"
 	"net/http"
 	"encoding/json"
+	"errors"
 )
 
 type logevent struct {
