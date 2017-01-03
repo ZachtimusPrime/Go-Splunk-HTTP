@@ -47,9 +47,9 @@ func (sl *SplunkLogger) Log(event map[string]string) (err error){
 	//log.Print(string(b[:])) // print what the splunk post body will be for checking/debugging
 
 	// make new request
-	url := sl.Url  // Splunk url
+	url := sl.Url
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(b))
-	req.Header.Add(content_type, application_json)
+	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Splunk " + sl.Token)
 	tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}} // turn off certificate checking
 	client := &http.Client{Transport: tr}
@@ -64,11 +64,11 @@ func (sl *SplunkLogger) Log(event map[string]string) (err error){
 	switch res.StatusCode {
 	case 200:
 	default:
-		// Turn response in to string. I'm not smart enough to use io.Readers effectively TODO: Clean the below logic up
+		// Turn response into string and return it
 		buf := new(bytes.Buffer)
 		buf.ReadFrom(res.Body)
 		responseBody := buf.String()
-		err = responseBody
+		err = errors.New(responseBody)
 		//log.Print(responseBody)	// print error to screen for checking/debugging
 	}
 	return err
