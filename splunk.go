@@ -10,6 +10,7 @@ import (
 	"errors"
 )
 
+// event represents the log event object that is sent to Splunk when *HTTPCollector.Log is called.
 type event struct {
 	Time 		int64		`json:"time" binding:"required"`	// epoch time in seconds
 	Host		string  	`json:"host" binding:"required"`	// hostname
@@ -19,6 +20,8 @@ type event struct {
 	Event		map[string]string `json:"event" binding:"required"`	// throw any useful key/val pairs here
 }
 
+// HTTPCollector handles the connection to the Splunk server. Once initialized, you just call the *HTTPCollector.Log
+// function to send off an HTTP log event.
 type HTTPCollector struct {
 	Url		string		`json:"url" binding:"required"`
 	Token		string		`json:"token" binding:"required"`
@@ -27,6 +30,11 @@ type HTTPCollector struct {
 	Index		string		`json:"index" binding:"required"`
 }
 
+// Log takes in a map[string]string of key/val pairs that you would like sent to Splunk in a log event, and bundles them
+// with the timestamp, hostname, source, sourcetype, and index specified in the HTTPCollector initialization.
+//
+// These can be any values/variables available to you that are of use.
+// i.e. {"error": "critical info here", "status_code": "404"}
 func (sl *HTTPCollector) Log(event map[string]string) (err error){
 	hostname, _ := os.Hostname()
 	// create Splunk log
