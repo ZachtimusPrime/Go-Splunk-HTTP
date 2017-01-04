@@ -3,7 +3,7 @@ A simple and lightweight HTTP Splunk logging package for Go. Instantiates a logg
 
 [![GoDoc](https://godoc.org/github.com/ZachtimusPrime/Go-Splunk-HTTP?status.svg)](https://godoc.org/github.com/ZachtimusPrime/Go-Splunk-HTTP) 
 [![Build Status](https://travis-ci.org/ZachtimusPrime/Go-Splunk-HTTP.svg?branch=master)](https://travis-ci.org/ZachtimusPrime/Go-Splunk-HTTP) 
-[![Coverage Status](https://coveralls.io/repos/github/ZachtimusPrime/Go-Splunk-HTTP/badge.svg?branch=master)](https://coveralls.io/github/ZachtimusPrime/Go-Splunk-HTTP?branch=master) 
+[![Coverage Status](https://coveralls.io/repos/github/ZachtimusPrime/Go-Splunk-HTTP/badge.svg?branch=master)](https://coveralls.io/github/ZachtimusPrime/Go-Splunk-HTTP?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/ZachtimusPrime/Go-Splunk-HTTP)](https://goreportcard.com/report/github.com/ZachtimusPrime/Go-Splunk-HTTP) 
 
 ## Table of Contents ##
