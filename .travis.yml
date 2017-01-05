@@ -9,11 +9,9 @@ before_install:
 install:
         - #
 before_script:
-        - gofmt -d -s .
-        - go vet ./...                        # some lint type checking
-        - echo "vetting all go files?"
-        - go tool vet ./*.go
+        - gofmt -d -s .                       # gofmt code so it's pretty
+        - go vet ./...                        # some lint-type checking
 script:
         # - diff -u <(echo -n) <(gofmt -d -s .)
         # - go test -v -race ./...            # run go tests
-        - $HOME/gopath/bin/goveralls -service=travis-ci
+        - $HOME/gopath/bin/goveralls -service=travis-ci   # run code coverage
