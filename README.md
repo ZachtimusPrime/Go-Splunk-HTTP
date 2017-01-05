@@ -38,6 +38,7 @@ func main() {
 				Token: "{your-token}",
 				Source: "{your-source}",
 				SourceType: "{your-sourcetype}",
+				Index: "{your-index}",
 		}
 		
 		// Send a log event

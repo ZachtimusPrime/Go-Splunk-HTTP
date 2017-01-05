@@ -10,7 +10,7 @@ import (
 	"errors"
 )
 
-// event represents the log event object that is sent to Splunk when *HTTPCollector.Log is called.
+// Event represents the log event object that is sent to Splunk when *HTTPCollector.Log is called.
 type Event struct {
 	Time 		int64		`json:"time" binding:"required"`	// epoch time in seconds
 	Host		string  	`json:"host" binding:"required"`	// hostname
