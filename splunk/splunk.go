@@ -10,7 +10,7 @@ import (
 	"errors"
 )
 
-// Event represents the log event object that is sent to Splunk when *HTTPCollector.Log is called.
+// Event represents the log event object that is sent to Splunk when Client.Log is called.
 type Event struct {
 	Time 		int64		`json:"time" binding:"required"`	// epoch time in seconds
 	Host		string  	`json:"host" binding:"required"`	// hostname
@@ -20,6 +20,13 @@ type Event struct {
 	Event		map[string]string `json:"event" binding:"required"`	// throw any useful key/val pairs here
 }
 
+
+// Client manages communication with Splunk's HTTP Event Collector.
+// New client objects should be created using the NewClient function.
+//
+// The URL field must be defined and pointed at a Splunk servers Event Collector port (i.e. https://{your-splunk-URL}:8088/services/collector).
+// The Token field must be defined with your access token to the Event Collector.
+// The Source, SourceType, and Index fields must be defined.
 type Client struct {
 	HTTPClient *http.Client	 // HTTP client used to communicate with the API
 	URL string
@@ -29,6 +36,11 @@ type Client struct {
 	Index string
 }
 
+// NewClient creates a new client to Splunk.
+// This should be the primary way a Splunk client object is constructed.
+//
+// If an httpClient object is specified it will be used instead of the
+// default http.DefaultClient.
 func NewClient(httpClient *http.Client, URL string, Token string, Source string, SourceType string, Index string) (*Client) {
 	// Create a new client
 	if httpClient == nil {
@@ -41,6 +53,8 @@ func NewClient(httpClient *http.Client, URL string, Token string, Source string,
 	return c
 }
 
+// NewEvent creates a new log event to send to Splunk.
+// This should be the primary way a Splunk log object is constructed, and is automatically called by the Log function attached to the client.
 func NewEvent(event map[string]string, source string, sourcetype string, index string) (Event) {
 	hostname, _ := os.Hostname()
 	e := Event{Time: time.Now().Unix(), Host: hostname, Source: source, SourceType: sourcetype, Index: index, Event: event}
@@ -48,6 +62,11 @@ func NewEvent(event map[string]string, source string, sourcetype string, index s
 	return e
 }
 
+// Client.Log is used to construct a new log event and POST it to the Splunk server.
+//
+// All that must be provided for a log event are the desired map[string]string key/val pairs. These can be anything
+// that provide context or information for the situation you are trying to log (i.e. err messages, status codes, etc).
+// The function auto-generates the event timestamp and hostname for you.
 func (c *Client) Log(event map[string]string) (error) {
 	// create Splunk log
 	log := NewEvent(event, c.Source, c.SourceType, c.Index)
