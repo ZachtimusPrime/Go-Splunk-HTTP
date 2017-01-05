@@ -19,7 +19,7 @@ go get "github.com/ZachtimusPrime/Go-Splunk-HTTP/splunk"
 
 ## Usage ##
 
-Construct a new Splunk HTTP connection, then send log events as desired. 
+Construct a new Splunk HTTP client, then send log events as desired. 
 
 For example:
 
@@ -32,17 +32,18 @@ import (
 
 func main() {
 
-		// Create new connection to splunk
-		sl := splunk.HTTPCollector{
-				Url: "https://{splunk-URL}:8088/services/collector",
-				Token: "{your-token}",
-				Source: "{your-source}",
-				SourceType: "{your-sourcetype}",
-				Index: "{your-index}",
-		}
+		// Create new Splunk client
+		splunk := splunk.NewClient(
+		        nil, 
+				"https://{your-splunk-URL}:8088/services/collector",
+				"{your-token}",
+				"{your-source}",
+				"{your-sourcetype}",
+				"{your-index}"
+		)
 		
-		// Send a log event
-		sl.Log(map[string]string{"msg": "send key/val pairs here", "msg2": "anything that is useful to you in the log event"})
+		// Send a log event with the client
+		splunk.Log(map[string]string{"msg": "send key/val pairs here", "msg2": "anything that is useful to you in the log event"})
 }
 
 ```
