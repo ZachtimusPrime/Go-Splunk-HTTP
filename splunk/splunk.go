@@ -20,35 +20,40 @@ type Event struct {
 	Event		map[string]string `json:"event" binding:"required"`	// throw any useful key/val pairs here
 }
 
-// HTTPCollector handles the connection to the Splunk server. Once initialized, you just call the *HTTPCollector.Log
-// function to send off an HTTP log event.
-type HTTPCollector struct {
-	Url		string		`json:"url" binding:"required"`
-	Token		string		`json:"token" binding:"required"`
-	Source 		string		`json:"source" binding:"required"`
-	SourceType 	string		`json:"sourcetype" binding:"required"`
-	Index		string		`json:"index" binding:"required"`
+type Client struct {
+	HTTPClient *http.Client	 // HTTP client used to communicate with the API
+	URL string
+	Token string
+	Source string
+	SourceType string
+	Index string
 }
 
-// Log takes in a map[string]string of key/val pairs that you would like sent to Splunk in a log event, and bundles them
-// with the timestamp, hostname, source, sourcetype, and index specified in the HTTPCollector initialization.
-//
-// These can be any values/variables available to you that are of use.
-// i.e. {"error": "critical info here", "status_code": "404"}
-func (sl *HTTPCollector) Log(event map[string]string) (err error){
-	hostname, _ := os.Hostname()
-	// create Splunk log
-	splunklog := Event{
-		Time: time.Now().Unix(),
-		Host: hostname,
-		Source: sl.Source,
-		SourceType: sl.SourceType,
-		Index: sl.Index,
-		Event: event,
+func NewClient(httpClient *http.Client, URL string, Token string, Source string, SourceType string, Index string) (*Client) {
+	// Create a new client
+	if httpClient == nil {
+		tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}} // turn off certificate checking
+		httpClient = &http.Client{Timeout: time.Second * 20, Transport: tr}
 	}
 
+	c := &Client{HTTPClient: httpClient, URL: URL, Token: Token, Source: Source, SourceType: SourceType, Index: Index}
+
+	return c
+}
+
+func NewEvent(event map[string]string, source string, sourcetype string, index string) (Event) {
+	hostname, _ := os.Hostname()
+	e := Event{Time: time.Now().Unix(), Host: hostname, Source: source, SourceType: sourcetype, Index: index, Event: event}
+
+	return e
+}
+
+func (c *Client) Log(event map[string]string) (error) {
+	// create Splunk log
+	log := NewEvent(event, c.Source, c.SourceType, c.Index)
+
 	// Convert requestBody struct to byte slice to prep for http.NewRequest
-	b, err := json.Marshal(splunklog)
+	b, err := json.Marshal(log)
 	if err != nil {
 		return err
 	}
@@ -56,15 +61,13 @@ func (sl *HTTPCollector) Log(event map[string]string) (err error){
 	//log.Print(string(b[:])) // print what the splunk post body will be for checking/debugging
 
 	// make new request
-	url := sl.Url
+	url := c.URL
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(b))
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Authorization", "Splunk " + sl.Token)
-	tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}} // turn off certificate checking
-	client := &http.Client{Transport: tr}
+	req.Header.Add("Authorization", "Splunk " + c.Token)
 
 	// receive response
-	res, err := client.Do(req)
+	res, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -78,7 +81,9 @@ func (sl *HTTPCollector) Log(event map[string]string) (err error){
 		buf.ReadFrom(res.Body)
 		responseBody := buf.String()
 		err = errors.New(responseBody)
-		//log.Print(responseBody)	// print error to screen for checking/debugging
+
+	//log.Print(responseBody)	// print error to screen for checking/debugging
 	}
+
 	return err
 }
