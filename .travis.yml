@@ -9,11 +9,11 @@ before_install:
 install:
         - #
 before_script:
-        - echo "vetting everything?"
+        - gofmt -d -s .
         - go vet ./...                        # some lint type checking
         - echo "vetting all go files?"
         - go tool vet ./*.go
 script:
-        - diff -u <(echo -n) <(gofmt -d -s .)
+        # - diff -u <(echo -n) <(gofmt -d -s .)
         # - go test -v -race ./...            # run go tests
         - $HOME/gopath/bin/goveralls -service=travis-ci
