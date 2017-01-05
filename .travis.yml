@@ -4,12 +4,16 @@ go:
         - 1.6.4
         - 1.7
 before_install:
-        - go get github.com/mattn/goveralls
+        - go get github.com/mattn/goveralls   # code coverage tracking
+        - go get -t -v ./...                  # grab project dependencies (non-vendor)
 install:
         - #
+before_script:
+        - echo "vetting everything?"
+        - go vet ./...                        # some lint type checking
+        - echo "vetting all go files?"
+        - go tool vet ./*.go
 script:
-        - go get -t -v ./...
         - diff -u <(echo -n) <(gofmt -d -s .)
-        - go tool vet .
-        - go test -v -race ./...
+        # - go test -v -race ./...            # run go tests
         - $HOME/gopath/bin/goveralls -service=travis-ci
