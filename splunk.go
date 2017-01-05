@@ -11,7 +11,7 @@ import (
 )
 
 // event represents the log event object that is sent to Splunk when *HTTPCollector.Log is called.
-type event struct {
+type Event struct {
 	Time 		int64		`json:"time" binding:"required"`	// epoch time in seconds
 	Host		string  	`json:"host" binding:"required"`	// hostname
 	Source		string  	`json:"source" binding:"required"`	// app name
@@ -38,7 +38,7 @@ type HTTPCollector struct {
 func (sl *HTTPCollector) Log(event map[string]string) (err error){
 	hostname, _ := os.Hostname()
 	// create Splunk log
-	splunklog := event{
+	splunklog := Event{
 		Time: time.Now().Unix(),
 		Host: hostname,
 		Source: sl.Source,
