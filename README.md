@@ -43,7 +43,10 @@ func main() {
 		)
 		
 		// Send a log event with the client
-		splunk.Log(map[string]string{"msg": "send key/val pairs here", "msg2": "anything that is useful to you in the log event"})
+		err := splunk.Log(interface{"msg": "send key/val pairs or json objects here", "msg2": "anything that is useful to you in the log event"})
+		if err != nil {
+        		return err
+        }
 }
 
 ```

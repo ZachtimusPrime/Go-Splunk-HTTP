@@ -17,9 +17,8 @@ type Event struct {
 	Source		string  	`json:"source" binding:"required"`	// app name
 	SourceType	string 		`json:"sourcetype" binding:"required"`	// Splunk bucket to group logs in
 	Index		string		`json:"index" binding:"required"`	// idk what it does..
-	Event		map[string]string `json:"event" binding:"required"`	// throw any useful key/val pairs here
+	Event		interface{}	`json:"event" binding:"required"`	// throw any useful key/val pairs here
 }
-
 
 // Client manages communication with Splunk's HTTP Event Collector.
 // New client objects should be created using the NewClient function.
@@ -55,7 +54,7 @@ func NewClient(httpClient *http.Client, URL string, Token string, Source string,
 
 // NewEvent creates a new log event to send to Splunk.
 // This should be the primary way a Splunk log object is constructed, and is automatically called by the Log function attached to the client.
-func NewEvent(event map[string]string, source string, sourcetype string, index string) (Event) {
+func NewEvent(event interface{}, source string, sourcetype string, index string) (Event) {
 	hostname, _ := os.Hostname()
 	e := Event{Time: time.Now().Unix(), Host: hostname, Source: source, SourceType: sourcetype, Index: index, Event: event}
 
@@ -67,7 +66,7 @@ func NewEvent(event map[string]string, source string, sourcetype string, index s
 // All that must be provided for a log event are the desired map[string]string key/val pairs. These can be anything
 // that provide context or information for the situation you are trying to log (i.e. err messages, status codes, etc).
 // The function auto-generates the event timestamp and hostname for you.
-func (c *Client) Log(event map[string]string) (error) {
+func (c *Client) Log(event interface{}) (error) {
 	// create Splunk log
 	log := NewEvent(event, c.Source, c.SourceType, c.Index)
 
@@ -94,6 +93,7 @@ func (c *Client) Log(event map[string]string) (error) {
 	// If statusCode is not good, return error string
 	switch res.StatusCode {
 	case 200:
+		return nil
 	default:
 		// Turn response into string and return it
 		buf := new(bytes.Buffer)
@@ -101,8 +101,7 @@ func (c *Client) Log(event map[string]string) (error) {
 		responseBody := buf.String()
 		err = errors.New(responseBody)
 
-	//log.Print(responseBody)	// print error to screen for checking/debugging
 	}
-
+	//log.Print(responseBody)	// print error to screen for checking/debugging
 	return err
 }
