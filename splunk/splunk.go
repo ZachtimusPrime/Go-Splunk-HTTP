@@ -1,23 +1,23 @@
 package splunk
 
 import (
-	"crypto/tls"
-	"time"
 	"bytes"
-	"os"
-	"net/http"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
+	"net/http"
+	"os"
+	"time"
 )
 
 // Event represents the log event object that is sent to Splunk when Client.Log is called.
 type Event struct {
-	Time 		int64		`json:"time" binding:"required"`	// epoch time in seconds
-	Host		string  	`json:"host" binding:"required"`	// hostname
-	Source		string  	`json:"source" binding:"required"`	// app name
-	SourceType	string 		`json:"sourcetype" binding:"required"`	// Splunk bucket to group logs in
-	Index		string		`json:"index" binding:"required"`	// idk what it does..
-	Event		interface{}	`json:"event" binding:"required"`	// throw any useful key/val pairs here
+	Time       int64       `json:"time" binding:"required"`       // epoch time in seconds
+	Host       string      `json:"host" binding:"required"`       // hostname
+	Source     string      `json:"source" binding:"required"`     // app name
+	SourceType string      `json:"sourcetype" binding:"required"` // Splunk bucket to group logs in
+	Index      string      `json:"index" binding:"required"`      // idk what it does..
+	Event      interface{} `json:"event" binding:"required"`      // throw any useful key/val pairs here
 }
 
 // Client manages communication with Splunk's HTTP Event Collector.
@@ -27,12 +27,13 @@ type Event struct {
 // The Token field must be defined with your access token to the Event Collector.
 // The Source, SourceType, and Index fields must be defined.
 type Client struct {
-	HTTPClient *http.Client	 // HTTP client used to communicate with the API
-	URL string
-	Token string
-	Source string
-	SourceType string
-	Index string
+	HTTPClient *http.Client // HTTP client used to communicate with the API
+	URL        string
+	Hostname   string
+	Token      string
+	Source     string //Default source
+	SourceType string //Default source type
+	Index      string //Default index
 }
 
 // NewClient creates a new client to Splunk.
@@ -40,24 +41,52 @@ type Client struct {
 //
 // If an httpClient object is specified it will be used instead of the
 // default http.DefaultClient.
-func NewClient(httpClient *http.Client, URL string, Token string, Source string, SourceType string, Index string) (*Client) {
+func NewClient(httpClient *http.Client, URL string, Token string, Source string, SourceType string, Index string) *Client {
 	// Create a new client
 	if httpClient == nil {
 		tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}} // turn off certificate checking
 		httpClient = &http.Client{Timeout: time.Second * 20, Transport: tr}
 	}
-
-	c := &Client{HTTPClient: httpClient, URL: URL, Token: Token, Source: Source, SourceType: SourceType, Index: Index}
-
+	hostname, _ := os.Hostname()
+	c := &Client{
+		HTTPClient: httpClient,
+		URL:        URL,
+		Hostname:   hostname,
+		Token:      Token,
+		Source:     Source,
+		SourceType: SourceType,
+		Index:      Index,
+	}
 	return c
 }
 
 // NewEvent creates a new log event to send to Splunk.
 // This should be the primary way a Splunk log object is constructed, and is automatically called by the Log function attached to the client.
-func NewEvent(event interface{}, source string, sourcetype string, index string) (Event) {
-	hostname, _ := os.Hostname()
-	e := Event{Time: time.Now().Unix(), Host: hostname, Source: source, SourceType: sourcetype, Index: index, Event: event}
+// This method takes the current timestamp for the event, meaning that the event is generated at runtime.
+func (c *Client) NewEvent(event interface{}, source string, sourcetype string, index string) *Event {
+	e := &Event{
+		Time:       time.Now().Unix(),
+		Host:       c.Hostname,
+		Source:     source,
+		SourceType: sourcetype,
+		Index:      index,
+		Event:      event,
+	}
+	return e
+}
 
+// NewEventWithTime creates a new log event with a specified timetamp to send to Splunk.
+// This is similar to NewEvent but if you want to log in a different time rather than time.Now this becomes handy. If that's
+// the case, use this function to create the Event object and the the LogEvent function.
+func (c *Client) NewEventWithTime(t int64, event interface{}, source string, sourcetype string, index string) *Event {
+	e := &Event{
+		Time:       t,
+		Host:       c.Hostname,
+		Source:     source,
+		SourceType: sourcetype,
+		Index:      index,
+		Event:      event,
+	}
 	return e
 }
 
@@ -66,23 +95,54 @@ func NewEvent(event interface{}, source string, sourcetype string, index string)
 // All that must be provided for a log event are the desired map[string]string key/val pairs. These can be anything
 // that provide context or information for the situation you are trying to log (i.e. err messages, status codes, etc).
 // The function auto-generates the event timestamp and hostname for you.
-func (c *Client) Log(event interface{}) (error) {
+func (c *Client) Log(event interface{}) error {
 	// create Splunk log
-	log := NewEvent(event, c.Source, c.SourceType, c.Index)
+	log := c.NewEvent(event, c.Source, c.SourceType, c.Index)
+	return c.LogEvent(log)
+}
 
+// Client.LogWithTime is used to construct a new log event with a scpecified timestamp and POST it to the Splunk server.
+//
+// This is similar to Client.Log, just with the t parameter.
+func (c *Client) LogWithTime(t int64, event interface{}) error {
+	// create Splunk log
+	log := c.NewEventWithTime(t, event, c.Source, c.SourceType, c.Index)
+	return c.LogEvent(log)
+}
+
+// Client.LogEvent is used to POST a single event to the Splunk server.
+func (c *Client) LogEvent(e *Event) error {
 	// Convert requestBody struct to byte slice to prep for http.NewRequest
-	b, err := json.Marshal(log)
+	b, err := json.Marshal(e)
 	if err != nil {
 		return err
 	}
+	return c.doRequest(bytes.NewBuffer(b))
+}
 
-	//log.Print(string(b[:])) // print what the splunk post body will be for checking/debugging
+// Client.LogEvents is used to POST multiple events with a single request to the Splunk server.
+func (c *Client) LogEvents(events []*Event) error {
+	buf := new(bytes.Buffer)
+	for _, e := range events {
+		b, err := json.Marshal(e)
+		if err != nil {
+			return err
+		}
+		buf.Write(b)
+		// Each json object should be separated by a blank line
+		buf.WriteString("\r\n\r\n")
+	}
+	// Convert requestBody struct to byte slice to prep for http.NewRequest
+	return c.doRequest(buf)
+}
 
+// Client.doRequest is used internally to POST the bytes of events to the Splunk server.
+func (c *Client) doRequest(b *bytes.Buffer) error {
 	// make new request
 	url := c.URL
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(b))
+	req, err := http.NewRequest("POST", url, b)
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Authorization", "Splunk " + c.Token)
+	req.Header.Add("Authorization", "Splunk "+c.Token)
 
 	// receive response
 	res, err := c.HTTPClient.Do(req)
@@ -102,6 +162,5 @@ func (c *Client) Log(event interface{}) (error) {
 		err = errors.New(responseBody)
 
 	}
-	//log.Print(responseBody)	// print error to screen for checking/debugging
 	return err
 }
