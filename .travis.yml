@@ -1,17 +1,18 @@
 language: go
 go:
-        - 1.5.4
-        - 1.6.4
-        - 1.7
+        - 1.5.x
+        - 1.6.x
+        - 1.7.x
+        - 1.10.x
 before_install:
-        - go get github.com/mattn/goveralls   # code coverage tracking
+        # - go get github.com/mattn/goveralls   # code coverage tracking
         - go get -t -v ./...                  # grab project dependencies (non-vendor)
 install:
-        - #
+        # - 
 before_script:
         - gofmt -d -s .                       # gofmt code so it's pretty
         - go vet ./...                        # some lint-type checking
 script:
-        # - diff -u <(echo -n) <(gofmt -d -s .)
         # - go test -v -race ./...            # run go tests
-        - $HOME/gopath/bin/goveralls -service=travis-ci   # run code coverage
+        # - $HOME/gopath/bin/goveralls -service=travis-ci   # run code coverage
+        - go build
