@@ -44,7 +44,7 @@ type Client struct {
 func NewClient(httpClient *http.Client, URL string, Token string, Source string, SourceType string, Index string) *Client {
 	// Create a new client
 	if httpClient == nil {
-		tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}} // turn off certificate checking
+		tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: false}}
 		httpClient = &http.Client{Timeout: time.Second * 20, Transport: tr}
 	}
 	hostname, _ := os.Hostname()
