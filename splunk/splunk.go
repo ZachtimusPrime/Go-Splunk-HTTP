@@ -2,6 +2,7 @@ package splunk
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -41,9 +42,10 @@ type Client struct {
 // If an httpClient object is specified it will be used instead of the
 // default http.DefaultClient.
 func NewClient(httpClient *http.Client, URL string, Token string, Source string, SourceType string, Index string) *Client {
-	// Use default client
+	// Create a new client
 	if httpClient == nil {
-		httpClient = http.DefaultClient
+		tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: false}}
+		httpClient = &http.Client{Timeout: time.Second * 20, Transport: tr}
 	}
 	hostname, _ := os.Hostname()
 	c := &Client{
