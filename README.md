@@ -84,3 +84,23 @@ func main() {
 }
 
 ```
+
+## Splunk Writer  ##
+To support logging libraries, and other output, we've added an asynchronous Writer. It supports retries, and different intervals for flushing messages & max log messages in its buffer
+
+The easiest way to get access to the writer with an existing client is to do:
+
+```go
+writer := splunkClient.Writer()
+```
+
+This will give you an io.Writer you can use to direct output to splunk. However, since the io.Writer() is asynchronous, it will never return an error from its Write() function. To access errors generated from the Client,
+Instantiate your Writer this way:
+
+```go
+splunk.Writer{
+  Client: splunkClient
+}
+```
+Since the type will now be splunk.Writer(), you can access the `Errors()` function, which returns a channel of errors. You can then spin up a goroutine to listen on this channel and report errors, or you can handle however you like. 
+
