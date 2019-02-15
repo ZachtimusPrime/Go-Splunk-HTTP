@@ -104,3 +104,14 @@ splunk.Writer{
 ```
 Since the type will now be splunk.Writer(), you can access the `Errors()` function, which returns a channel of errors. You can then spin up a goroutine to listen on this channel and report errors, or you can handle however you like. 
 
+Optionally, you can add more configuration to the writer.
+
+```go
+splunk.Writer {
+  Client: splunkClient,
+  FlushInterval: 10 *time.Second, // How often we'll flush our buffer
+  FlushThreshold: 25, // Max messages we'll keep in our buffer, regardless of FlushInterval
+  MaxRetries: 2, // Number of times we'll retry a failed send
+}
+```
+
