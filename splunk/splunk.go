@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"os"
 	"time"
@@ -134,6 +135,13 @@ func (c *Client) LogEvents(events []*Event) error {
 	}
 	// Convert requestBody struct to byte slice to prep for http.NewRequest
 	return c.doRequest(buf)
+}
+
+//Writer is a convience method for creating an io.Writer from a Writer with default values
+func (c *Client) Writer() io.Writer {
+	return &Writer{
+		Client: c,
+	}
 }
 
 // Client.doRequest is used internally to POST the bytes of events to the Splunk server.
