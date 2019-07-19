@@ -158,6 +158,9 @@ func (c *Client) doRequest(b *bytes.Buffer) error {
 		return err
 	}
 
+	// need to make sure we close the body to avoid hanging the connection
+	defer res.Body.Close()
+
 	// If statusCode is not good, return error string
 	switch res.StatusCode {
 	case 200:
