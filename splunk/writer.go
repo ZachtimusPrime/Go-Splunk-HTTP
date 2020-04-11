@@ -1,6 +1,7 @@
 package splunk
 
 import (
+	"encoding/json"
 	"sync"
 	"time"
 )
@@ -35,7 +36,7 @@ type Writer struct {
 // Helpful if we have long flush intervals to more precisely record the time at which
 // a message was written
 type message struct {
-	data      []byte
+	data      json.RawMessage
 	writtenAt time.Time
 }
 
