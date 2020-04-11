@@ -163,6 +163,10 @@ func (c *Client) doRequest(b *bytes.Buffer) error {
 	// If statusCode is not good, return error string
 	switch res.StatusCode {
 	case 200:
+		// need to read the reply otherwise the connection hangs
+		buf := new(bytes.Buffer)
+		buf.ReadFrom(res.Body)
+
 		return nil
 	default:
 		// Turn response into string and return it
