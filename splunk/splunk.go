@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"time"
@@ -13,12 +14,12 @@ import (
 
 // Event represents the log event object that is sent to Splunk when Client.Log is called.
 type Event struct {
-	Time       int64       `json:"time" binding:"required"`       // epoch time in seconds
-	Host       string      `json:"host" binding:"required"`       // hostname
-	Source     string      `json:"source" binding:"required"`     // app name
-	SourceType string      `json:"sourcetype" binding:"required"` // Splunk bucket to group logs in
-	Index      string      `json:"index" binding:"required"`      // idk what it does..
-	Event      interface{} `json:"event" binding:"required"`      // throw any useful key/val pairs here
+	Time       int64       `json:"time"`                 // epoch time in seconds
+	Host       string      `json:"host"`                 // hostname
+	Source     string      `json:"source,omitempty"`     // optional description of the source of the event; typically the app's name
+	SourceType string      `json:"sourcetype,omitempty"` // optional name of a Splunk parsing configuration; this is usually inferred by Splunk
+	Index      string      `json:"index,omitempty"`      // optional name of the Splunk index to store the event in; not required if the token has a default index set in Splunk
+	Event      interface{} `json:"event"`                // throw any useful key/val pairs here
 }
 
 // Client manages communication with Splunk's HTTP Event Collector.
@@ -26,7 +27,6 @@ type Event struct {
 //
 // The URL field must be defined and pointed at a Splunk servers Event Collector port (i.e. https://{your-splunk-URL}:8088/services/collector).
 // The Token field must be defined with your access token to the Event Collector.
-// The Source, SourceType, and Index fields must be defined.
 type Client struct {
 	HTTPClient *http.Client // HTTP client used to communicate with the API
 	URL        string
@@ -164,6 +164,8 @@ func (c *Client) doRequest(b *bytes.Buffer) error {
 	// If statusCode is not good, return error string
 	switch res.StatusCode {
 	case 200:
+		// need to read the reply otherwise the connection hangs
+		io.Copy(ioutil.Discard, res.Body)
 		return nil
 	default:
 		// Turn response into string and return it
