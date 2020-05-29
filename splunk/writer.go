@@ -103,7 +103,7 @@ func (w *Writer) send(messages []*message, retries int) {
 	events := make([]*Event, len(messages))
 	for i, m := range messages {
 		// Use the configuration of the Client for the event
-		events[i] = w.Client.NewEventWithTime(m.writtenAt.Unix(), m.data, w.Client.Source, w.Client.SourceType, w.Client.Index)
+		events[i] = w.Client.NewEventWithTime(m.writtenAt, m.data, w.Client.Source, w.Client.SourceType, w.Client.Index)
 	}
 	// Send the events to splunk
 	err := w.Client.LogEvents(events)
