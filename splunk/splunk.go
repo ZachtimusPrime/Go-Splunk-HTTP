@@ -161,19 +161,25 @@ func (c *Client) doRequest(b *bytes.Buffer) error {
 	// need to make sure we close the body to avoid hanging the connection
 	defer res.Body.Close()
 
-	// If statusCode is not good, return error string
+	// If statusCode is not OK, return the error
 	switch res.StatusCode {
 	case 200:
 		// need to read the reply otherwise the connection hangs
 		io.Copy(ioutil.Discard, res.Body)
 		return nil
 	default:
-		// Turn response into string and return it
-		buf := new(bytes.Buffer)
-		buf.ReadFrom(res.Body)
-		responseBody := buf.String()
-		err = errors.New(responseBody)
+		respBody, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			return err
+		}
 
+		// try deserializing response body to a typed HEC response
+		hecResp := &EventCollectorResponse{}
+		if err := json.Unmarshal(respBody, hecResp); err == nil {
+			return hecResp
+		}
+
+		// otherwise, return the response body as an error string
+		return errors.New(string(respBody))
 	}
-	return err
 }
