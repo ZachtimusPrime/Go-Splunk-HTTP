@@ -14,7 +14,7 @@ A simple and lightweight HTTP Splunk logging package for Go. Instantiates a logg
 ## Installation ##
 
 ```bash
-go get "github.com/ZachtimusPrime/Go-Splunk-HTTP/splunk"
+go get "github.com/ZachtimusPrime/Go-Splunk-HTTP/splunk/v2"
 ```
 
 ## Usage ##
@@ -26,7 +26,7 @@ For example:
 ```go
 package main
 
-import "github.com/ZachtimusPrime/Go-Splunk-HTTP/splunk"
+import "github.com/ZachtimusPrime/Go-Splunk-HTTP/splunk/v2"
 
 func main() {
 
