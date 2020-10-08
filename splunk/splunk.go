@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -14,12 +15,22 @@ import (
 
 // Event represents the log event object that is sent to Splunk when Client.Log is called.
 type Event struct {
-	Time       int64       `json:"time"`                 // epoch time in seconds
+	Time       EventTime   `json:"time"`                 // when the event happened
 	Host       string      `json:"host"`                 // hostname
 	Source     string      `json:"source,omitempty"`     // optional description of the source of the event; typically the app's name
 	SourceType string      `json:"sourcetype,omitempty"` // optional name of a Splunk parsing configuration; this is usually inferred by Splunk
 	Index      string      `json:"index,omitempty"`      // optional name of the Splunk index to store the event in; not required if the token has a default index set in Splunk
 	Event      interface{} `json:"event"`                // throw any useful key/val pairs here
+}
+
+// EventTime marshals timestamps using the Splunk HTTP Event Collector's default format.
+type EventTime struct {
+	time.Time
+}
+
+func (t EventTime) MarshalJSON() ([]byte, error) {
+	// The milliseconds are truncated, not rounded to nearest; eg. 12:00:00.5008274 will be logged as 12:00:00.500.
+	return []byte(fmt.Sprintf("%d.%d", t.Unix(), t.Nanosecond()/1e6)), nil
 }
 
 // Client manages communication with Splunk's HTTP Event Collector.
@@ -66,7 +77,7 @@ func NewClient(httpClient *http.Client, URL string, Token string, Source string,
 // This method takes the current timestamp for the event, meaning that the event is generated at runtime.
 func (c *Client) NewEvent(event interface{}, source string, sourcetype string, index string) *Event {
 	e := &Event{
-		Time:       time.Now().Unix(),
+		Time:       EventTime{time.Now()},
 		Host:       c.Hostname,
 		Source:     source,
 		SourceType: sourcetype,
@@ -79,9 +90,9 @@ func (c *Client) NewEvent(event interface{}, source string, sourcetype string, i
 // NewEventWithTime creates a new log event with a specified timetamp to send to Splunk.
 // This is similar to NewEvent but if you want to log in a different time rather than time.Now this becomes handy. If that's
 // the case, use this function to create the Event object and the the LogEvent function.
-func (c *Client) NewEventWithTime(t int64, event interface{}, source string, sourcetype string, index string) *Event {
+func (c *Client) NewEventWithTime(t time.Time, event interface{}, source string, sourcetype string, index string) *Event {
 	e := &Event{
-		Time:       t,
+		Time:       EventTime{time.Now()},
 		Host:       c.Hostname,
 		Source:     source,
 		SourceType: sourcetype,
@@ -102,10 +113,10 @@ func (c *Client) Log(event interface{}) error {
 	return c.LogEvent(log)
 }
 
-// Client.LogWithTime is used to construct a new log event with a scpecified timestamp and POST it to the Splunk server.
+// Client.LogWithTime is used to construct a new log event with a specified timestamp and POST it to the Splunk server.
 //
 // This is similar to Client.Log, just with the t parameter.
-func (c *Client) LogWithTime(t int64, event interface{}) error {
+func (c *Client) LogWithTime(t time.Time, event interface{}) error {
 	// create Splunk log
 	log := c.NewEventWithTime(t, event, c.Source, c.SourceType, c.Index)
 	return c.LogEvent(log)
