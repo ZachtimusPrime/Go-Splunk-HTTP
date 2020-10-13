@@ -20,5 +20,5 @@ before_script:
 script:
         # - go test -v -race ./...            # run go tests
         # - $HOME/gopath/bin/goveralls -service=travis-ci   # run code coverage
-        - cd splunk/
+        - cd splunk/v2
         - go build
