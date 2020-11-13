@@ -160,6 +160,9 @@ func (c *Client) doRequest(b *bytes.Buffer) error {
 	// make new request
 	url := c.URL
 	req, err := http.NewRequest("POST", url, b)
+	if err != nil {
+		return err
+	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Splunk "+c.Token)
 
