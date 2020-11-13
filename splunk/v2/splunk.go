@@ -92,7 +92,7 @@ func (c *Client) NewEvent(event interface{}, source string, sourcetype string, i
 // the case, use this function to create the Event object and the the LogEvent function.
 func (c *Client) NewEventWithTime(t time.Time, event interface{}, source string, sourcetype string, index string) *Event {
 	e := &Event{
-		Time:       EventTime{time.Now()},
+		Time:       EventTime{t},
 		Host:       c.Hostname,
 		Source:     source,
 		SourceType: sourcetype,
