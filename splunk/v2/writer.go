@@ -50,9 +50,13 @@ func (w *Writer) Write(b []byte) (int, error) {
 		w.errors = make(chan error, bufferSize)
 		go w.listen()
 	})
+	// Make a local copy of the bytearray so it doesn't get overwritten by
+	// the next call to Write()
+	var b2 = make([]byte, len(b))
+	copy(b2, b)
 	// Send the data to the channel
 	w.dataChan <- &message{
-		data:      b,
+		data:      b2,
 		writtenAt: time.Now(),
 	}
 	// We don't know if we've hit any errors yet, so just say we're good
