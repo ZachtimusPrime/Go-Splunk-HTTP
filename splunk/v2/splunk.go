@@ -92,7 +92,7 @@ func (c *Client) NewEvent(event interface{}, source string, sourcetype string, i
 // the case, use this function to create the Event object and the the LogEvent function.
 func (c *Client) NewEventWithTime(t time.Time, event interface{}, source string, sourcetype string, index string) *Event {
 	e := &Event{
-		Time:       EventTime{time.Now()},
+		Time:       EventTime{t},
 		Host:       c.Hostname,
 		Source:     source,
 		SourceType: sourcetype,
@@ -160,6 +160,9 @@ func (c *Client) doRequest(b *bytes.Buffer) error {
 	// make new request
 	url := c.URL
 	req, err := http.NewRequest("POST", url, b)
+	if err != nil {
+		return err
+	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Splunk "+c.Token)
 
