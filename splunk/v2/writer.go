@@ -107,7 +107,7 @@ func (w *Writer) Flush() {
 	w.messageBuffer.Lock()
 	defer w.messageBuffer.Unlock()
 	if len(w.messageBuffer.buffer) > 0 {
-		go w.send(w.messageBuffer.buffer, w.MaxRetries)
+		w.send(w.messageBuffer.buffer, w.MaxRetries)
 	}
 	// Make a new array since the old one is getting used by the splunk client now
 	w.messageBuffer.buffer = make([]*message, 0)
