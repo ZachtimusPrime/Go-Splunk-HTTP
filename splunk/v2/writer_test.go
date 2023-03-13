@@ -61,6 +61,7 @@ func TestWriter_Write(t *testing.T) {
 		t.Errorf("Timed out waiting for messages")
 	}
 	// We may have received more than numWrites amount of messages, check that case
+	lock.Lock()
 	if numMessages != numWrites {
 		t.Errorf("Didn't get the right number of messages, expected %d, got %d", numWrites, numMessages)
 	}
