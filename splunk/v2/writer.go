@@ -26,10 +26,16 @@ type Writer struct {
 	// How many Write()'s before buffer should be flushed to splunk
 	FlushThreshold int
 	// Max number of retries we should do when we flush the buffer
-	MaxRetries int
-	dataChan   chan *message
-	errors     chan error
-	once       sync.Once
+	MaxRetries    int
+	dataChan      chan *message
+	errors        chan error
+	once          sync.Once
+	messageBuffer messageBuffer
+}
+
+type messageBuffer struct {
+	buffer []*message
+	sync.RWMutex
 }
 
 // Associates some bytes with the time they were written
@@ -78,27 +84,40 @@ func (w *Writer) listen() {
 		w.FlushThreshold = defaultThreshold
 	}
 	ticker := time.NewTicker(w.FlushInterval)
-	buffer := make([]*message, 0)
-	//Define function so we can flush in several places
-	flush := func() {
-		// Go send the data to splunk
-		go w.send(buffer, w.MaxRetries)
-		// Make a new array since the old one is getting used by the splunk client now
-		buffer = make([]*message, 0)
-	}
 	for {
+		var flushRequired = false
 		select {
 		case <-ticker.C:
-			if len(buffer) > 0 {
-				flush()
-			}
+			flushRequired = true
 		case d := <-w.dataChan:
-			buffer = append(buffer, d)
-			if len(buffer) > w.FlushThreshold {
-				flush()
-			}
+			w.messageBuffer.Lock()
+			w.messageBuffer.buffer = append(w.messageBuffer.buffer, d)
+			flushRequired = len(w.messageBuffer.buffer) > w.FlushThreshold
+			w.messageBuffer.Unlock()
+		}
+
+		if flushRequired {
+			w.Flush()
 		}
 	}
+}
+
+// Flush flushes the buffer if it contains messages.
+func (w *Writer) Flush() {
+	w.messageBuffer.Lock()
+	defer w.messageBuffer.Unlock()
+	if len(w.messageBuffer.buffer) > 0 {
+		go w.send(w.messageBuffer.buffer, w.MaxRetries)
+	}
+	// Make a new array since the old one is getting used by the splunk client now
+	w.messageBuffer.buffer = make([]*message, 0)
+}
+
+// BufferIsEmpty checks if the buffer is empty.
+func (w *Writer) BufferIsEmpty() bool {
+	w.messageBuffer.RLock()
+	defer w.messageBuffer.RUnlock()
+	return len(w.messageBuffer.buffer) == 0
 }
 
 // send sends data to splunk, retrying upon failure
