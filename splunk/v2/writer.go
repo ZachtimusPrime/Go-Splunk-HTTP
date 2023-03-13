@@ -97,7 +97,7 @@ func (w *Writer) listen() {
 		}
 
 		if flushRequired {
-			w.Flush()
+			go w.Flush()
 		}
 	}
 }
